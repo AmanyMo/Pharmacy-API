@@ -5,6 +5,7 @@ using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 using System.Web.Http;
 using Pharmacy_API.Models;
 
@@ -37,13 +38,13 @@ namespace Pharmacy_API.Controllers
         }
 
         // POST: api/InvoiceDetail
-        public IHttpActionResult Post([FromBody]Invoice_Detail detail)
+        public async  Task<IHttpActionResult> Post([FromBody]Invoice_Detail detail)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest("enter data");
+                return BadRequest("enter data correctly !");
             }
-            if (IsExist(detail))
+            if (await IsExist(detail.Invoice_ID))
             {
                 return Conflict();
             }
@@ -67,19 +68,66 @@ namespace Pharmacy_API.Controllers
             return Created("invoiceeeee detailsssss created", phdb.Invoice_Details);
         }
 
-        private bool IsExist(object invoicedetails)
+        private async Task<bool> IsExist(int Inv_id)
         {
-            throw new NotImplementedException();
+            // return T= exist before can't add another invoice details :( , F doesn't exist & u can add invoice details :)
+          Invoice_Detail invoice_ =  await phdb.Invoice_Details.FindAsync(Inv_id);
+ 
+                return ( (invoice_ !=null) ?true : false ) ;       
         }
 
         // PUT: api/InvoiceDetails/5
-        public void Put(int id, [FromBody]string value)
+        public async Task<IHttpActionResult> Put(int id, [FromBody]Invoice_Detail invoice_Detail)
         {
+            if(!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+          Invoice_Detail invoice_ =  await phdb.Invoice_Details.FindAsync(id);
+            if(invoice_ == null)
+            {
+                return NotFound();
+            }
+            phdb.Entry(invoice_).State = EntityState.Modified;
+            try
+            {
+                phdb.SaveChanges();
+            }
+            catch (DbUpdateException)
+            {
+                return ResponseMessage(new HttpResponseMessage(HttpStatusCode.Forbidden));
+            }
+            return Ok(invoice_Detail);
+
         }
 
         // DELETE: api/InvoiceDetails/5
-        public void Delete(int id)
+        public IHttpActionResult Delete(int id)
         {
+            if(!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+            Invoice i = phdb.Invoices.Find(id);
+            if (i == null)
+            {
+                return NotFound();
+            }
+            else
+            {
+                //  phdb.Invoices.Remove(i);
+                phdb.Entry(i).State = EntityState.Deleted;
+                try
+                {
+                    phdb.SaveChanges();
+                }
+                catch (DbUpdateException)
+                {
+                    return ResponseMessage(new HttpResponseMessage(HttpStatusCode.Forbidden));
+                }
+
+            }
+            return Ok();
         }
     }
 }
