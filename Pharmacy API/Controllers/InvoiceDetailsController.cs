@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -18,14 +20,56 @@ namespace Pharmacy_API.Controllers
         }
 
         // GET: api/InvoiceDetails/5
-        public IHttpActionResult Get(int id)
+        public  IHttpActionResult Get(int id)
         {
-            return Ok();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+            var invoice_Detail = phdb.Invoice_Details.Where(d => d.Invoice_ID == id).Select(d => new { d.Invoice_ID, d.Medicine_ID, d.Quantity, d.Price }).GroupBy(s => s.Invoice_ID).ToList();
+
+            if (invoice_Detail == null)
+            {
+                return NotFound();
+            }
+           
+            return Ok(invoice_Detail);
         }
 
-        // POST: api/InvoiceDetails
-        public void Post([FromBody]string value)
+        // POST: api/InvoiceDetail
+        public IHttpActionResult Post([FromBody]Invoice_Detail detail)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest("enter data");
+            }
+            if (IsExist(detail))
+            {
+                return Conflict();
+            }
+            else
+            {
+                phdb.Entry(detail).State = EntityState.Added;
+                // phdb.Invoices.Add(invoice);
+
+                try
+                {
+                    phdb.SaveChanges();
+                }
+                catch (DbUpdateException)
+                {
+                    return ResponseMessage(new HttpResponseMessage(HttpStatusCode.Forbidden));
+
+                }
+            }
+
+
+            return Created("invoiceeeee detailsssss created", phdb.Invoice_Details);
+        }
+
+        private bool IsExist(object invoicedetails)
+        {
+            throw new NotImplementedException();
         }
 
         // PUT: api/InvoiceDetails/5
